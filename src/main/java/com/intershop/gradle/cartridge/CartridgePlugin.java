@@ -23,9 +23,11 @@ import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.component.SoftwareComponent;
 import org.gradle.api.plugins.ExtensionContainer;
 import org.gradle.api.publish.PublicationContainer;
 import org.gradle.api.publish.PublishingExtension;
+import org.gradle.api.publish.ivy.IvyConfiguration;
 import org.gradle.api.publish.ivy.IvyPublication;
 import org.gradle.api.publish.maven.MavenPublication;
 import org.gradle.api.publish.plugins.PublishingPlugin;
@@ -36,6 +38,7 @@ import org.gradle.model.internal.core.ModelPath;
 import org.gradle.model.internal.core.ModelReference;
 import org.gradle.model.internal.core.ModelRegistrations;
 import org.gradle.model.internal.registry.ModelRegistry;
+import org.gradle.util.GUtil;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -75,6 +78,9 @@ public class CartridgePlugin implements Plugin<Project> {
             task.provideArtifactBaseName(pkg.getBaseNameProvider());
             task.provideArtifactAppendix(pkg.getNameExtensionProvider());
             task.provideArtifactClassifier(pkg.getOsExtensionPProvider());
+            if(GUtil.isTrue(project.getVersion())) {
+                task.setVersion(project.getVersion().toString());
+            }
             task.setStaticLibs(extension.getStaticLibs());
         });
 
@@ -88,7 +94,8 @@ public class CartridgePlugin implements Plugin<Project> {
                                         extension.getDisplayNameProvider(),
                                         extension.getDescriptionProvider(),
                                         extension.getDeploymentFileProvider(),
-                                        extension.getStaticLibs()))
+                                        extension.getStaticLibs(),
+                                        project.getComponents()))
                             .descriptor("Model of Externale Cartridge Data.")
                             .build());
         }
@@ -110,6 +117,7 @@ public class CartridgePlugin implements Plugin<Project> {
                         cartridgeData.getMavenPublicationNameProvider().getOrElse(IntershopExtension.DEFAULT_MAVENPUBLICATION),
                         MavenPublication.class,
                         mvnPublication -> {
+                            // add zip packages from tasks
                             for(ZipComponent task : tasks.withType(ZipComponent.class).values()) {
                                 mvnPublication.artifact(task, mvnArtifact -> {
                                     mvnArtifact.setExtension(task.getExtension());
@@ -122,6 +130,7 @@ public class CartridgePlugin implements Plugin<Project> {
                                     }
                                 });
                             }
+
                             // add static files
                             for(File file : cartridgeData.getStaticLibs().getFiles()) {
                                 mvnPublication.artifact(file, mvnArtifact -> {
@@ -129,12 +138,21 @@ public class CartridgePlugin implements Plugin<Project> {
                                     mvnArtifact.setExtension("jar");
                                 });
                             }
+
+                            // add deployment file - if exists
                             File deploymentFile = cartridgeData.getDepoymentFileProvider().get().getAsFile();
                             if(deploymentFile.exists() && deploymentFile.isFile()) {
                                 mvnPublication.artifact(deploymentFile, mvnArtifact -> {
                                     mvnArtifact.setClassifier("deploy-gradle");
                                 });
                             }
+
+                            // add jar from java project - if available
+                            SoftwareComponent javaComponent = cartridgeData.getComponents().findByName("java");
+                            if(javaComponent != null) {
+                                mvnPublication.from(javaComponent);
+                            }
+
                             // add description and displayname to pom descriptor
                             mvnPublication.getPom().withXml(xmlProvider -> {
                                 Element root = xmlProvider.asElement();
@@ -185,6 +203,7 @@ public class CartridgePlugin implements Plugin<Project> {
                         cartridgeData.getIvyPublicationNameProvider().getOrElse(IntershopExtension.DEFAULT_IVYPUBLICATION),
                         IvyPublication.class,
                         ivyPublication -> {
+                            // add zip packages from tasks
                             for(ZipComponent task : tasks.withType(ZipComponent.class).values()) {
                                 ivyPublication.artifact(task, ivyArtifact -> {
                                     ivyArtifact.setName(task.getArtifactBaseName());
@@ -195,17 +214,38 @@ public class CartridgePlugin implements Plugin<Project> {
                                     }
                                 });
                             }
+
+                            // add static files
+                            // add configurations
+                            if(cartridgeData.getStaticLibs().getFiles().size() > 0) {
+                                ivyPublication.configurations(config -> {
+                                    IvyConfiguration defaultConf = config.maybeCreate("default");
+                                    IvyConfiguration compileConf = config.maybeCreate("compile");
+                                    defaultConf.extend("compile");
+                                });
+                            }
+
+                            // add artifacts
                             for(File file : cartridgeData.getStaticLibs().getFiles()) {
                                 ivyPublication.artifact(file, ivyArtifact -> {
                                     ivyArtifact.setName(getFileNamewithoutExtension(file.getName()));
+                                    ivyArtifact.setConf("compile");
                                 });
                             }
+
+                            // add deployment file - if exists
                             File deploymentFile = cartridgeData.getDepoymentFileProvider().get().getAsFile();
                             if(deploymentFile.exists() && deploymentFile.isFile()) {
                                 ivyPublication.artifact(deploymentFile, ivyArtifact -> {
                                     ivyArtifact.setName(getFileNamewithoutExtension(deploymentFile.getName()));
                                     ivyArtifact.setType("deploy-gradle");
                                 });
+                            }
+
+                            // add jar from java project - if available
+                            SoftwareComponent javaComponent = cartridgeData.getComponents().findByName("java");
+                            if(javaComponent != null) {
+                                ivyPublication.from(javaComponent);
                             }
 
                             // add description and displayname to ivy descriptor

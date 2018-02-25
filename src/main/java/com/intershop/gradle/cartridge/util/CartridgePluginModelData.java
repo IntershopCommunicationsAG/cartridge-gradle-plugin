@@ -15,6 +15,7 @@
  */
 package com.intershop.gradle.cartridge.util;
 
+import org.gradle.api.component.SoftwareComponentContainer;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
@@ -31,12 +32,15 @@ public class CartridgePluginModelData {
     private final Provider<RegularFile> depoymentFileProvider;
     private final FileCollection staticLibs;
 
+    private final SoftwareComponentContainer components;
+
     public CartridgePluginModelData(Provider<String> ivyPublicationNameProvider,
                                     Provider<String> mavenPublicationNameProvider,
                                     Provider<String> displayNameProvider,
                                     Provider<String> descriptionProvider,
                                     Provider<RegularFile> depoymentFileProvider,
-                                    FileCollection staticLibs) {
+                                    FileCollection staticLibs,
+                                    SoftwareComponentContainer components) {
 
         this.ivyPublicationNameProvider = ivyPublicationNameProvider;
         this.mavenPublicationNameProvider = mavenPublicationNameProvider;
@@ -44,6 +48,7 @@ public class CartridgePluginModelData {
         this.descriptionProvider = descriptionProvider;
         this.depoymentFileProvider = depoymentFileProvider;
         this.staticLibs = staticLibs;
+        this.components = components;
     }
 
     public Provider<String> getIvyPublicationNameProvider() {
@@ -68,5 +73,9 @@ public class CartridgePluginModelData {
 
     public FileCollection getStaticLibs() {
         return staticLibs;
+    }
+
+    public SoftwareComponentContainer getComponents() {
+        return components;
     }
 }
