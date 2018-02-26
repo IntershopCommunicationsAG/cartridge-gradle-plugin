@@ -30,6 +30,7 @@ import javax.inject.Inject;
  * This class provides all information of a package
  * of an INTERSHOP cartridge.
  */
+@SuppressWarnings("unused")
 @NonNullApi
 public class ComponentPackage implements Named {
 

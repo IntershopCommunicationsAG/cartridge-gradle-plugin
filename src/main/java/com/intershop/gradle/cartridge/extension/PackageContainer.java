@@ -29,17 +29,18 @@ import javax.inject.Inject;
  * creation and configuration of all available packages
  * of an INTERSHOP cartridge (component).
  */
+@SuppressWarnings({"WeakerAccess", "unused"})
 public class PackageContainer {
 
-    final static String STATICFILES = "staticfiles";
+    private final static String STATICFILES = "staticfiles";
 
-    final static String LOCAL       = "general";
-    final static String SHARE       = "share";
-    final static String CARTRIDGE   = "cartridge";
+    private final static String LOCAL       = "general";
+    private final static String SHARE       = "share";
+    private final static String CARTRIDGE   = "cartridge";
 
-    final static String LOCAL_NAME = "local";
-    final static String SHARE_NAME = "share";
-    final static String CARTRIDGE_NAME = "cartridge";
+    private final static String LOCAL_NAME = "local";
+    private final static String SHARE_NAME = "share";
+    private final static String CARTRIDGE_NAME = "cartridge";
 
     private final Project project;
     private final NamedDomainObjectContainer<ComponentPackage> packageContainer;
@@ -260,6 +261,7 @@ public class PackageContainer {
     }
 
     // cartridge share package
+    @SuppressWarnings("SameParameterValue")
     private ComponentPackage getCartridgeContainer(String pkgName) {
         ComponentPackage pkg = packageContainer.findByName(pkgName);
         if(! GUtil.isTrue(pkg)) {

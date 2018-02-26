@@ -209,6 +209,8 @@ pluginBundle {
 }
 
 dependencies {
+    compileOnly 'org.jetbrains:annotations:15.0'
+
     compile 'commons-lang:commons-lang:2.6'
 
     testCompile 'commons-io:commons-io:2.2'

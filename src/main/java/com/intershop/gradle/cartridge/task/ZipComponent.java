@@ -29,6 +29,7 @@ import org.gradle.api.tasks.bundling.Zip;
 
 import java.io.File;
 
+@SuppressWarnings("ALL")
 public class ZipComponent extends Zip {
 
     private final ConfigurableFileCollection inputFilesProperty = getProject().files();

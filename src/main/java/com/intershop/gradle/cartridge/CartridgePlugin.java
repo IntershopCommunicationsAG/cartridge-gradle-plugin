@@ -39,6 +39,7 @@ import org.gradle.model.internal.core.ModelReference;
 import org.gradle.model.internal.core.ModelRegistrations;
 import org.gradle.model.internal.registry.ModelRegistry;
 import org.gradle.util.GUtil;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -49,7 +50,7 @@ import java.io.File;
 
 public class CartridgePlugin implements Plugin<Project> {
 
-    ModelRegistry modelRegistry;
+    private final ModelRegistry modelRegistry;
 
     @Inject
     public CartridgePlugin(ModelRegistry modelRegistry) {
@@ -57,7 +58,7 @@ public class CartridgePlugin implements Plugin<Project> {
     }
 
     @Override
-    public void apply(final Project project) {
+    public void apply(@NotNull final Project project) {
         //add base plugin for all publications ...
         project.getPluginManager().apply(PublishingPlugin.class);
 
@@ -67,7 +68,7 @@ public class CartridgePlugin implements Plugin<Project> {
         if(extensions.findByType(IntershopExtension.class) == null) {
             extensions.add(IntershopExtension.ICMCOMPONENT_EXTENSION_NAME, new IntershopExtension(project));
         }
-        final IntershopExtension extension = extensions.findByType(IntershopExtension.class);
+        final IntershopExtension extension = extensions.getByType(IntershopExtension.class);
 
         extension.getPackages().getPackageContainer().all(pkg -> {
             ZipComponent task = project.getTasks().maybeCreate(pkg.getTaskName(), ZipComponent.class);
@@ -101,6 +102,7 @@ public class CartridgePlugin implements Plugin<Project> {
         }
     }
 
+    @SuppressWarnings("unused")
     static class Rules extends RuleSource {
 
         private static final Logger LOGGER = Logger.getLogger(Rules.class);
@@ -142,9 +144,7 @@ public class CartridgePlugin implements Plugin<Project> {
                             // add deployment file - if exists
                             File deploymentFile = cartridgeData.getDepoymentFileProvider().get().getAsFile();
                             if(deploymentFile.exists() && deploymentFile.isFile()) {
-                                mvnPublication.artifact(deploymentFile, mvnArtifact -> {
-                                    mvnArtifact.setClassifier("deploy-gradle");
-                                });
+                                mvnPublication.artifact(deploymentFile, mvnArtifact -> mvnArtifact.setClassifier("deploy-gradle"));
                             }
 
                             // add jar from java project - if available

@@ -27,6 +27,7 @@ import org.gradle.api.provider.Provider;
 
 import javax.inject.Inject;
 
+@SuppressWarnings("ALL")
 public class IntershopExtension {
 
     // names for the plugin

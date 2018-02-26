@@ -18,28 +18,6 @@ package com.intershop.gradle.cartridge
 
 class ComponentUtility {
 
-    static void prepareComponentStructure(File dir, String cartridgename='test-artridge') {
-        // create main directories
-        File staticfilesFolder = new File(dir, "staticfiles")
-
-        // create staticfiles directories
-        File cartridgeFolder = new File(staticfilesFolder, "cartridge")
-        File shareFolder = new File(staticfilesFolder, "share")
-        File localFolder = new File(staticfilesFolder, "general")
-
-        // create share folder
-        File systemFolder = new File(shareFolder, 'system')
-        File sitesFolder = new File(shareFolder, 'sites')
-
-        // create local folders
-        File rootFolder = new File(localFolder, 'root')
-        File winFolder = new File(localFolder, 'win.x86_64')
-        File linuxFolder = new File(localFolder, 'linux.x86_64')
-        File darwinFolder = new File(localFolder, 'darwin.x86_64')
-        File specialLinuxFolder = new File(localFolder, 'linux-SLES10.0-x86_64')
-        File specialWinFolder = new File(localFolder, 'win-AMD64')
-    }
-
     static void prepareFolders(File srcdir, String folderpath, String cartridgeName='test-artridge', String filename = null, String filecontent = null) {
         File folder = new File(srcdir, folderpath.replace('$cartridge$', cartridgeName))
         folder.mkdirs()
