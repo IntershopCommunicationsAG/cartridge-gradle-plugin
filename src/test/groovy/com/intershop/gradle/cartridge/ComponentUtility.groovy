@@ -31,15 +31,6 @@ class ComponentUtility {
         File systemFolder = new File(shareFolder, 'system')
         File sitesFolder = new File(shareFolder, 'sites')
 
-        // create cartridge folders
-        File componentsFolder = new File(cartridgeFolder, "components")
-        File templatesFolder = new File(cartridgeFolder, "templates/default")
-        File libFolder = new File(cartridgeFolder, "lib")
-        File pipelineFolder = new File(cartridgeFolder, "pipelines")
-
-        // create resource folders
-        File resourceFolder = new File(libFolder, 'lib/resource')
-
         // create local folders
         File rootFolder = new File(localFolder, 'root')
         File winFolder = new File(localFolder, 'win.x86_64')
@@ -63,6 +54,12 @@ class ComponentUtility {
 
     static void prepareDeploymentFile(File dir, String cartridgename='test-artridge') {
         prepareFolders(dir, 'deployment', cartridgename, 'deploy.gradle', '// deploy.gradle content')
+    }
+
+    static void prepareLocalOSspecificFiles(File dir, String cartridgename='test-artridge') {
+        prepareFolders(dir, 'staticfiles/general/root', cartridgename, 'intershop.properties', '# properties content');
+        prepareFolders(dir, 'staticfiles/general/win-AMD64/root/bin', cartridgename, 'environment.bat', '# environment bat content');
+        prepareFolders(dir, 'staticfiles/general/linux-SLES10.0-x86_64/root/bin', cartridgename, 'environment.sh', '# envoirpnment sh content');
     }
 
     static void prepareStaticSitesFolder(File dir, String cartridgename='test-artridge') {
@@ -94,4 +91,5 @@ class ComponentUtility {
         prepareStaticSitesFolder(dir, cartridgename)
         prepareDeploymentFile(dir, cartridgename)
     }
+
 }

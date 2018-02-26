@@ -26,6 +26,10 @@ import org.gradle.api.provider.Provider;
 
 import javax.inject.Inject;
 
+/**
+ * This class provides all information of a package
+ * of an INTERSHOP cartridge.
+ */
 @NonNullApi
 public class ComponentPackage implements Named {
 
@@ -119,8 +123,8 @@ public class ComponentPackage implements Named {
         sourcesProperty.setFrom(sources);
     }
 
-    public void sources(FileCollection source) {
-        sourcesProperty.from(source);
+    public void sources(Object... paths) {
+        sourcesProperty.from(paths);
     }
 
     public String getTaskName() {

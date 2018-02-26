@@ -303,7 +303,7 @@ class ICMComponentPluginIntSpec extends AbstractIntegrationSpec {
     }
 
     @Unroll
-    def 'Test publish component with JavaPlugin - #gradleVersion'(gradleVersion) {
+    def 'Test ivy publish component with JavaPlugin - #gradleVersion'(gradleVersion) {
         given:
         String projectName = "testproject"
 
@@ -352,7 +352,7 @@ class ICMComponentPluginIntSpec extends AbstractIntegrationSpec {
         File cartridgeZip = new File(testProjectDir, "${pluginBuildDir}/cartridge/${projectName}-cartridge-${testVersion}.zip")
         File shareZip = new File(testProjectDir, "${pluginBuildDir}/share/${projectName}-share-${testVersion}.zip")
         File ivyFile = new File(testProjectDir, "build/publications/ivyIntershop/ivy.xml")
-        File javaFile = new File(testProjectDir, "build/libs/${projectName}-${testVersion}.jar");
+        File javaFile = new File(testProjectDir, "build/libs/${projectName}-${testVersion}.jar")
 
         String pluginRepoDir = "build/repo/${testGroupName}/${projectName}/${testVersion}"
 
@@ -410,6 +410,448 @@ class ICMComponentPluginIntSpec extends AbstractIntegrationSpec {
         ivyFile.text.contains('<artifact ext="zip" name="' + projectName + '" type="share"')
         ivyFile.text.contains('<artifact ext="gradle" name="deploy" type="deploy-gradle"/>')
 
+
+        where:
+        gradleVersion << supportedGradleVersions
+    }
+
+    @Unroll
+    def 'Test maven publish component with JavaPlugin - #gradleVersion'(gradleVersion) {
+        given:
+        String projectName = "testproject"
+
+        ComponentUtility.prepareCartridge(testProjectDir, projectName)
+
+        String testGroupName = 'com.intershop.test'
+        String testVersion = '1.0.0'
+
+        createSettingsGradle(projectName)
+        writeJavaTestClass('com.intershop.test')
+
+        buildFile  << """
+        plugins {
+            id 'maven-publish'
+            id 'java'
+            id 'com.intershop.gradle.cartridge'
+        }
+        
+        group = '${testGroupName}'
+        version = '${testVersion}'
+
+        intershop {
+            packages {
+                share()
+                cartridge()
+            }
+        }
+        
+        publishing {
+            repositories {
+                maven {
+                    url "\${rootProject.buildDir}/repo"
+                }
+            }
+        }
+        
+        """.stripIndent()
+
+        String pluginBuildDir = "build/${IntershopExtension.MAIN_OUTPUTDIR_NAME}"
+
+        File cartridgeZip = new File(testProjectDir, "${pluginBuildDir}/cartridge/${projectName}-cartridge-${testVersion}.zip")
+        File shareZip = new File(testProjectDir, "${pluginBuildDir}/share/${projectName}-share-${testVersion}.zip")
+        File pomFile = new File(testProjectDir, "build/publications/mvnIntershop/pom-default.xml")
+        File javaFile = new File(testProjectDir, "build/libs/${projectName}-${testVersion}.jar")
+
+        String pluginRepoDir = "build/repo/${testGroupName.split('\\.').join('/')}/${projectName}/${testVersion}/${projectName}-${testVersion}"
+
+        File repoCartridgeZip = new File(testProjectDir, "${pluginRepoDir}-cartridge.zip")
+        File repoShareZip = new File(testProjectDir, "${pluginRepoDir}-share.zip")
+        File repoJarFile = new File(testProjectDir, "${pluginRepoDir}-testfile.jar")
+        File repoJavaFile = new File(testProjectDir, "${pluginRepoDir}.jar")
+        File repoDeployFile = new File(testProjectDir, "${pluginRepoDir}-deploy-gradle.gradle")
+        File repoPomDescriptor = new File(testProjectDir, "${pluginRepoDir}.pom")
+
+
+
+        when:
+        List<String> args = ['publish', '-s', '-i']
+        def result1 = getPreparedGradleRunner()
+                .withArguments(args)
+                .withGradleVersion(gradleVersion)
+                .build()
+
+        then:
+        true
+
+        // check tasks
+        result1.task(":zipCartridge").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipShare").outcome == TaskOutcome.SUCCESS
+        result1.task(":classes").outcome == TaskOutcome.SUCCESS
+        result1.task(":jar").outcome == TaskOutcome.SUCCESS
+        result1.task(":publishMvnIntershopPublicationToMavenRepository").outcome == TaskOutcome.SUCCESS
+        result1.task(":publish").outcome == TaskOutcome.SUCCESS
+
+        // check files
+        cartridgeZip.exists()
+        shareZip.exists()
+        pomFile.exists()
+        javaFile.exists()
+
+        repoCartridgeZip.exists()
+        repoShareZip.exists()
+        repoJarFile.exists()
+        repoDeployFile.exists()
+        repoPomDescriptor.exists()
+        repoJavaFile.exists()
+
+        // check content
+        repoDeployFile.text == new File(testProjectDir, "deployment/deploy.gradle").text
+
+        dumpZipContent(repoShareZip).contains("sites/${projectName}/units/root/impex/config/Users.xml".toString())
+        dumpZipContent(repoShareZip).contains("sites/${projectName}/units/root/impex/src/Users.xml".toString())
+        dumpZipContent(repoCartridgeZip).contains("${projectName}/release/pipelines/testpipeline.pipeline".toString())
+        !dumpZipContent(repoCartridgeZip).contains("${projectName}/release/lib/testfile.jar".toString())
+
+        pomFile.text.contains("<cartridge-displayname>${projectName}</cartridge-displayname>".toString())
+
+        where:
+        gradleVersion << supportedGradleVersions
+    }
+
+    @Unroll
+    def 'Test ivy publish component build - OS specific - #gradleVersion'(gradleVersion) {
+        given:
+        String projectName = "testproject"
+
+        ComponentUtility.prepareCartridge(testProjectDir, projectName)
+        ComponentUtility.prepareLocalOSspecificFiles(testProjectDir, projectName)
+
+        String testGroupName = 'com.intershop.test'
+        String testVersion = '1.0.0'
+
+        createSettingsGradle(projectName)
+
+        buildFile  << """
+        plugins {
+            id 'ivy-publish'
+            id 'com.intershop.gradle.cartridge'
+        }
+        
+        group = '${testGroupName}'
+        version = '${testVersion}'
+
+        intershop {
+            packages {
+                createLocal('win.x86_64') {
+                    sources(project.files('staticfiles/general/win-AMD64/root'))
+                }
+                createLocal('linux.x86_64') {
+                    sources(project.files('staticfiles/general/linux-SLES10.0-x86_64/root'))
+                }
+                share()
+                cartridge()
+            }
+        }
+        
+        publishing {
+            repositories {
+                ivy {
+                    url "\${rootProject.buildDir}/repo"
+                    layout('pattern') {
+                        ivy '[organisation]/[module]/[revision]/[type]s/ivy-[revision].xml'
+                        artifact '[organisation]/[module]/[revision]/[ext]s/[artifact]-[type](-[classifier])-[revision].[ext]'
+                        artifact '[organisation]/[module]/[revision]/[type]s/ivy-[revision].xml'
+                    }
+                }
+            }
+        }
+        
+        """.stripIndent()
+
+        String pluginBuildDir = "build/${IntershopExtension.MAIN_OUTPUTDIR_NAME}"
+
+        File localWinZip = new File(testProjectDir, "${pluginBuildDir}/local_win.x86_64/${projectName}-local-${testVersion}-win.x86_64.zip")
+        File localLinuxZip = new File(testProjectDir, "${pluginBuildDir}/local_linux.x86_64/${projectName}-local-${testVersion}-linux.x86_64.zip")
+        File cartridgeZip = new File(testProjectDir, "${pluginBuildDir}/cartridge/${projectName}-cartridge-${testVersion}.zip")
+        File shareZip = new File(testProjectDir, "${pluginBuildDir}/share/${projectName}-share-${testVersion}.zip")
+        File ivyFile = new File(testProjectDir, "build/publications/ivyIntershop/ivy.xml")
+
+        String pluginRepoDir = "build/repo/${testGroupName}/${projectName}/${testVersion}"
+
+        File repoLocalWinZip = new File(testProjectDir, "${pluginRepoDir}/zips/${projectName}-local-win.x86_64-${testVersion}.zip")
+        File repoLocalLinuxZip = new File(testProjectDir, "${pluginRepoDir}/zips/${projectName}-local-linux.x86_64-${testVersion}.zip")
+        File repoCartridgeZip = new File(testProjectDir, "${pluginRepoDir}/zips/${projectName}-cartridge-${testVersion}.zip")
+        File repoShareZip = new File(testProjectDir, "${pluginRepoDir}/zips/${projectName}-share-${testVersion}.zip")
+        File repoJarFile = new File(testProjectDir, "${pluginRepoDir}/jars/testfile-jar-${testVersion}.jar")
+        File repoDeployFile = new File(testProjectDir, "${pluginRepoDir}/gradles/deploy-deploy-gradle-${testVersion}.gradle")
+        File repoIvyDescriptor = new File(testProjectDir, "${pluginRepoDir}/ivys/ivy-${testVersion}.xml")
+
+        when:
+        List<String> args = ['publish', '-s', '-i']
+        def result1 = getPreparedGradleRunner()
+                .withArguments(args)
+                .withGradleVersion(gradleVersion)
+                .build()
+
+        then:
+        // check tasks
+        result1.task(":zipLocal_win.x86_64").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipLocal_linux.x86_64").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipCartridge").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipShare").outcome == TaskOutcome.SUCCESS
+        result1.task(":publishIvyIntershopPublicationToIvyRepository").outcome == TaskOutcome.SUCCESS
+        result1.task(":publish").outcome == TaskOutcome.SUCCESS
+
+        // check files
+        localWinZip.exists()
+        localLinuxZip.exists()
+        cartridgeZip.exists()
+        shareZip.exists()
+        ivyFile.exists()
+
+        repoLocalWinZip.exists()
+        repoLocalLinuxZip.exists()
+        repoCartridgeZip.exists()
+        repoShareZip.exists()
+        repoJarFile.exists()
+        repoDeployFile.exists()
+        repoIvyDescriptor.exists()
+
+        // check content
+        repoDeployFile.text == new File(testProjectDir, "deployment/deploy.gradle").text
+
+        dumpZipContent(repoLocalWinZip).contains("bin/environment.bat".toString())
+        dumpZipContent(repoLocalWinZip).contains("intershop.properties".toString())
+        dumpZipContent(repoLocalLinuxZip).contains("bin/environment.sh".toString())
+        dumpZipContent(repoLocalLinuxZip).contains("intershop.properties".toString())
+        dumpZipContent(repoShareZip).contains("sites/${projectName}/units/root/impex/config/Users.xml".toString())
+        dumpZipContent(repoShareZip).contains("sites/${projectName}/units/root/impex/src/Users.xml".toString())
+        dumpZipContent(repoCartridgeZip).contains("${projectName}/release/pipelines/testpipeline.pipeline".toString())
+        !dumpZipContent(repoCartridgeZip).contains("${projectName}/release/lib/testfile.jar".toString())
+
+        ivyFile.text.contains("<e:displayName>${projectName}</e:displayName>")
+        ivyFile.text.contains('<ivy-module xmlns:e="http://ant.apache.org/ivy/extra" xmlns:m="http://ant.apache.org/ivy/maven" version="2.0">')
+        ivyFile.text.contains('<artifact conf="compile" ext="jar" name="testfile" type="jar"/>')
+        ivyFile.text.contains('<artifact ext="zip" name="' + projectName + '" type="cartridge"/>')
+        ivyFile.text.contains('<artifact ext="zip" name="' + projectName + '" type="share"')
+        ivyFile.text.contains('<artifact ext="gradle" name="deploy" type="deploy-gradle"/>')
+
+        where:
+        gradleVersion << supportedGradleVersions
+    }
+
+    @Unroll
+    def 'Test maven publish component build - OS specific - #gradleVersion'(gradleVersion) {
+        given:
+        String projectName = "testproject"
+
+        ComponentUtility.prepareCartridge(testProjectDir, projectName)
+        ComponentUtility.prepareLocalOSspecificFiles(testProjectDir, projectName)
+
+        String testGroupName = 'com.intershop.test'
+        String testVersion = '1.0.0'
+
+        createSettingsGradle(projectName)
+
+        buildFile  << """
+        plugins {
+            id 'maven-publish'
+            id 'com.intershop.gradle.cartridge'
+        }
+        
+        group = '${testGroupName}'
+        version = '${testVersion}'
+
+        intershop {
+            packages {
+                createLocal('win.x86_64') {
+                    sources(project.files('staticfiles/general/win-AMD64/root'))
+                }
+                createLocal('linux.x86_64') {
+                    sources(project.files('staticfiles/general/linux-SLES10.0-x86_64/root'))
+                }
+                share()
+                cartridge()
+            }
+        }
+        
+        publishing {
+            repositories {
+                maven {
+                    url "\${rootProject.buildDir}/repo"
+                }
+            }
+        }
+        
+        """.stripIndent()
+
+        String pluginBuildDir = "build/${IntershopExtension.MAIN_OUTPUTDIR_NAME}"
+
+        File localWinZip = new File(testProjectDir, "${pluginBuildDir}/local_win.x86_64/${projectName}-local-${testVersion}-win.x86_64.zip")
+        File localLinuxZip = new File(testProjectDir, "${pluginBuildDir}/local_linux.x86_64/${projectName}-local-${testVersion}-linux.x86_64.zip")
+        File cartridgeZip = new File(testProjectDir, "${pluginBuildDir}/cartridge/${projectName}-cartridge-${testVersion}.zip")
+        File shareZip = new File(testProjectDir, "${pluginBuildDir}/share/${projectName}-share-${testVersion}.zip")
+        File pomFile = new File(testProjectDir, "build/publications/mvnIntershop/pom-default.xml")
+
+        String pluginRepoDir = "build/repo/${testGroupName.split('\\.').join('/')}/${projectName}/${testVersion}/${projectName}-${testVersion}"
+
+        File repoLocalWinZip = new File(testProjectDir, "${pluginRepoDir}-local_win.x86_64.zip")
+        File repoLocalLinuxZip = new File(testProjectDir, "${pluginRepoDir}-local_linux.x86_64.zip")
+        File repoCartridgeZip = new File(testProjectDir, "${pluginRepoDir}-cartridge.zip")
+        File repoShareZip = new File(testProjectDir, "${pluginRepoDir}-share.zip")
+        File repoJarFile = new File(testProjectDir, "${pluginRepoDir}-testfile.jar")
+        File repoDeployFile = new File(testProjectDir, "${pluginRepoDir}-deploy-gradle.gradle")
+        File repoPomDescriptor = new File(testProjectDir, "${pluginRepoDir}.pom")
+
+        when:
+        List<String> args = ['publish', '-s', '-i']
+        def result1 = getPreparedGradleRunner()
+                .withArguments(args)
+                .withGradleVersion(gradleVersion)
+                .build()
+
+        then:
+        // check tasks
+        result1.task(":zipLocal_win.x86_64").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipLocal_linux.x86_64").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipCartridge").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipShare").outcome == TaskOutcome.SUCCESS
+        result1.task(":publishMvnIntershopPublicationToMavenRepository").outcome == TaskOutcome.SUCCESS
+        result1.task(":publish").outcome == TaskOutcome.SUCCESS
+
+        // check files
+        localWinZip.exists()
+        localLinuxZip.exists()
+        cartridgeZip.exists()
+        shareZip.exists()
+        pomFile.exists()
+
+        repoLocalWinZip.exists()
+        repoLocalLinuxZip.exists()
+        repoCartridgeZip.exists()
+        repoShareZip.exists()
+        repoJarFile.exists()
+        repoDeployFile.exists()
+        repoPomDescriptor.exists()
+
+        // check content
+        repoDeployFile.text == new File(testProjectDir, "deployment/deploy.gradle").text
+
+        dumpZipContent(repoLocalWinZip).contains("bin/environment.bat".toString())
+        dumpZipContent(repoLocalWinZip).contains("intershop.properties".toString())
+        dumpZipContent(repoLocalLinuxZip).contains("bin/environment.sh".toString())
+        dumpZipContent(repoLocalLinuxZip).contains("intershop.properties".toString())
+        dumpZipContent(repoShareZip).contains("sites/${projectName}/units/root/impex/config/Users.xml".toString())
+        dumpZipContent(repoShareZip).contains("sites/${projectName}/units/root/impex/src/Users.xml".toString())
+        dumpZipContent(repoCartridgeZip).contains("${projectName}/release/pipelines/testpipeline.pipeline".toString())
+        !dumpZipContent(repoCartridgeZip).contains("${projectName}/release/lib/testfile.jar".toString())
+
+        pomFile.text.contains("<cartridge-displayname>${projectName}</cartridge-displayname>".toString())
+
+        where:
+        gradleVersion << supportedGradleVersions
+    }
+
+    @Unroll
+    def 'Test ivy publish component build - add Sources - #gradleVersion'(gradleVersion) {
+        given:
+        String projectName = "testproject"
+
+        ComponentUtility.prepareStaticCartridgFolder(testProjectDir, projectName)
+        File template1 = new File(testProjectDir, "staticfiles/cartridge/templates/default/template01.isml")
+        File template2 = new File(testProjectDir, "staticfiles/cartridge/templates/default/template02.isml")
+        template1.getParentFile().mkdirs() && template1.createNewFile()
+        template2.getParentFile().mkdirs() && template2.createNewFile()
+        template1 << """
+        // testtemplate 1
+        """.stripIndent()
+        template2 << """
+        // testtemplate 2
+        """.stripIndent()
+
+        String testGroupName = 'com.intershop.test'
+        String testVersion = '1.0.0'
+
+        createSettingsGradle(projectName)
+
+        buildFile  << """
+        plugins {
+            id 'ivy-publish'
+            id 'com.intershop.gradle.cartridge'
+        }
+        
+        group = '${testGroupName}'
+        version = '${testVersion}'
+
+        task copy(type: Copy) {
+            from('staticfiles/cartridge/templates/default/') {
+                into 'cartridge/templates/compiled'
+            }
+            into new File(project.buildDir, 'generated')
+        }
+        
+        intershop {
+            packages {
+                cartridge {
+                    sources(copy)
+                }
+            }
+        }
+        
+        publishing {
+            repositories {
+                ivy {
+                    url "\${rootProject.buildDir}/repo"
+                    layout('pattern') {
+                        ivy '[organisation]/[module]/[revision]/[type]s/ivy-[revision].xml'
+                        artifact '[organisation]/[module]/[revision]/[ext]s/[artifact]-[type](-[classifier])-[revision].[ext]'
+                        artifact '[organisation]/[module]/[revision]/[type]s/ivy-[revision].xml'
+                    }
+                }
+            }
+        }
+        
+        """.stripIndent()
+
+        String pluginBuildDir = "build/${IntershopExtension.MAIN_OUTPUTDIR_NAME}"
+
+        File cartridgeZip = new File(testProjectDir, "${pluginBuildDir}/cartridge/${projectName}-cartridge-${testVersion}.zip")
+        File ivyFile = new File(testProjectDir, "build/publications/ivyIntershop/ivy.xml")
+
+        String pluginRepoDir = "build/repo/${testGroupName}/${projectName}/${testVersion}"
+
+        File repoCartridgeZip = new File(testProjectDir, "${pluginRepoDir}/zips/${projectName}-cartridge-${testVersion}.zip")
+        File repoIvyDescriptor = new File(testProjectDir, "${pluginRepoDir}/ivys/ivy-${testVersion}.xml")
+
+        when:
+        List<String> args = ['publish', '-s', '-i']
+        def result1 = getPreparedGradleRunner()
+                .withArguments(args)
+                .withGradleVersion(gradleVersion)
+                .build()
+
+        then:
+        // check tasks
+        result1.task(":copy").outcome == TaskOutcome.SUCCESS
+        result1.task(":zipCartridge").outcome == TaskOutcome.SUCCESS
+        result1.task(":publishIvyIntershopPublicationToIvyRepository").outcome == TaskOutcome.SUCCESS
+        result1.task(":publish").outcome == TaskOutcome.SUCCESS
+
+        // check files
+        cartridgeZip.exists()
+        ivyFile.exists()
+
+        repoCartridgeZip.exists()
+        repoIvyDescriptor.exists()
+
+        // check content
+        dumpZipContent(repoCartridgeZip).contains("${projectName}/release/pipelines/testpipeline.pipeline".toString())
+        dumpZipContent(repoCartridgeZip).contains("${projectName}/release/cartridge/templates/compiled/template01.isml".toString())
+        dumpZipContent(repoCartridgeZip).contains("${projectName}/release/cartridge/templates/compiled/template02.isml".toString())
+
+        ivyFile.text.contains("<e:displayName>${projectName}</e:displayName>")
+        ivyFile.text.contains('<ivy-module xmlns:e="http://ant.apache.org/ivy/extra" version="2.0">')
+        ivyFile.text.contains('<artifact ext="zip" name="' + projectName + '" type="cartridge"/>')
 
         where:
         gradleVersion << supportedGradleVersions

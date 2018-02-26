@@ -20,7 +20,11 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.RegularFile;
 import org.gradle.api.provider.Provider;
 
-
+/**
+ * This class provides all information for
+ * the handover from the project based space
+ * to the role based space.
+ */
 public class CartridgePluginModelData {
 
     private final Provider<String> displayNameProvider;
