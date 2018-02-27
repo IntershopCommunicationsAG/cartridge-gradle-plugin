@@ -11,7 +11,7 @@ https://docs.gradle.org/current/userguide/publishing_maven.html[Maven] publishin
 Maven support is currently experimental.
 
 == Usage
-To apply the ICM Component Gradle plugin to your project, add the following in your build script:
+To apply the ICM Component Gradle plugin to your project, add the following configuration in your build script:
 
 [source,groovy]
 [subs=+attributes]
