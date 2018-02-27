@@ -1,4 +1,4 @@
-= Intershop Commerce Management Component Gradle Plugin
+= Intershop Commerce Management Cartridge Gradle Plugin
 :latestRevision: 1.0.0
 :icons: font
 
@@ -7,7 +7,8 @@ Note: This plugin requires Gradle 4 and JDK 8
 == Summary
 This plugin creates all necessary artifacts of a component of Intershop Commerce Management.
 It provides these as artifacts for https://docs.gradle.org/current/userguide/publishing_ivy.html[Ivy] or
-https://docs.gradle.org/current/userguide/publishing_maven.html[Maven] publishing.
+https://docs.gradle.org/current/userguide/publishing_maven.html[Maven] publishing. +
+Maven support is currently experimental.
 
 == Usage
 To apply the ICM Component Gradle plugin to your project, add the following in your build script:
@@ -19,6 +20,21 @@ To apply the ICM Component Gradle plugin to your project, add the following in y
 plugins {
     id 'com.intershop.gradle.icm-component' version '{latestRevision}'
 }
+
+intershop {
+    // add local OS specific package
+    createLocal('win.x86_64') {
+        sources(project.files('staticfiles/general/win.x86_64/root'))
+    }
+
+    // create standard share package
+    share()
+
+    // add output from isml plugin to cartridge package
+    cartridge {
+        sources(isml)
+    }
+}
 ----
 
 == Tasks
@@ -26,7 +42,9 @@ The ICM Component Gradle plugin adds ...
 
 [cols="25%,30%,45%", width="90%, options="header"]
 |===
-|Task name                          | Type                              |Description
+|Task name          | Type                              | Description
+|validateCartridge  | c.i.g.c.t.ValidateCartridge       | Validates project configuration
+|zip<PackageName>   | c.i.g.c.t.ZipComponent            | Create package from package configuration
 |===
 
 == Project Extension 'intershop'
@@ -34,15 +52,58 @@ This plugin adds an extension *`intershop`* to the project.
 
 === Properties
 
-[cols="25%,10%,10%,55%", width="90%, options="header"]
+[cols="20%,10%,15%,55%", width="90%, options="header"]
 |===
-|Property | Type | Default value | Description
+|Property               | Type              | Default value     | Description
+|*ivyPublicationName*     | `String`          | `"ivyIntershop"`  | Name for ivy publication
+|*mavenPublicationName*   | `String`          | `"mvnIntershop"`  | Name for maven publication
+|*displayName*            | `String`          | `project.name`    | Name for cartridge +
+This will displayed in the application.
+|*description*            | `String`          | `project.description` +
+or `""` | Cartridge description +
+This will displayed in the application.
+|*deploymentFile*         | `String`          | `file('deployment` +
+`/deploy.gradle')` | *@deprecated*: special deployment file
+|*staticLibs*             | `FileCollection`  | `fileTree( +
+`dir: 'staticfiles` +
+`/cartridge/release', +
+`include: *.jar`) | Libraries/components located in the cartridge
+|*packages*               | `PackageContainer`| &nbsp; | Package configurations and configuration methods
 |===
 
 === Methods
 [cols="20%,15%,65%", width="90%", options="header"]
 |===
-|Method  | Values | Description
+|Method      | Parameter | Description
+|*packages*  | `Closure` | Provides configuration in a closure.
+|*packages*  | `Action<? super PackageContainer>`| Provides configuration in a action.
+|===
+
+=== Object 'ComponentPackage'
+This object represents the configuration of a package type - local, share or cartridge. For all types it
+is possible to configure special OS specific packages.
+
+==== Properties
+
+[cols="20%,10%,15%,55%", width="90%, options="header"]
+|===
+|Property          | Type             | Default value      | Description
+|*name*            | `String`         | Configuration name | Configuration name: 'local', 'share', +
+'cartridge' or one of this with OS +
+extension, separed by "_".
+|*baseName*        | `String`         | `project.name`  | Name of the packages
+|*nameExtension*   | `String`         | Configuration name | Configuration name: 'local', 'share', +
+'cartridge' without OS extensions
+|*osExtension*     | `String`         | `""` | Operating system specific extension
+|*releaseDirPath*  | `String`         | `""` | Path of the root directory of the zip package
+|*sources*         | `FileCollection` | &nbsp; | Files of this package
+|===
+
+==== Methods
+[cols="20%,20%,60%", width="90%", options="header"]
+|===
+|Method      | Parameter | Description
+|*sources*   | Object... paths | Add source file objects
 |===
 
 == License

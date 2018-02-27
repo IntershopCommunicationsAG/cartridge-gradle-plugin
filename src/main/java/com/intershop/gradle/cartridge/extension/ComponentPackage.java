@@ -39,7 +39,7 @@ public class ComponentPackage implements Named {
     private final Property<String> baseNameProperty;
     private final Property<String> nameExtensionProperty;
     private final Property<String> osExtensionProperty;
-    private final Property<String> releaseDirNameProperty;
+    private final Property<String> releaseDirPathProperty;
 
     private final ConfigurableFileCollection sourcesProperty;
 
@@ -51,7 +51,7 @@ public class ComponentPackage implements Named {
         baseNameProperty  = project.getObjects().property(String.class);
         nameExtensionProperty = project.getObjects().property(String.class);
         osExtensionProperty  = project.getObjects().property(String.class);
-        releaseDirNameProperty = project.getObjects().property(String.class);
+        releaseDirPathProperty = project.getObjects().property(String.class);
         sourcesProperty = project.files();
 
         // set defaults
@@ -61,6 +61,7 @@ public class ComponentPackage implements Named {
 
         nameExtensionProperty.set(nameParts[0]);
         osExtensionProperty.set(nameParts.length > 1 ? nameParts[1] : "");
+        releaseDirPathProperty.set("");
     }
 
     @Override
@@ -104,16 +105,16 @@ public class ComponentPackage implements Named {
         osExtensionProperty.set(name);
     }
 
-    public Provider<String> getReleaseDirNameProvider() {
-        return releaseDirNameProperty;
+    public Provider<String> getReleaseDirPathProvider() {
+        return releaseDirPathProperty;
     }
 
-    public String getReleaseDirName() {
-        return releaseDirNameProperty.get();
+    public String getReleaseDirPath() {
+        return releaseDirPathProperty.get();
     }
 
-    public void setReleaseDirName(String name) {
-        releaseDirNameProperty.set(name);
+    public void setReleaseDirPath(String name) {
+        releaseDirPathProperty.set(name);
     }
 
     public FileCollection getSources() {

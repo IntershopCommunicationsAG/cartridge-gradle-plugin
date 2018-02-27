@@ -77,7 +77,7 @@ public class CartridgePlugin implements Plugin<Project> {
             task.setGroup(IntershopExtension.ICMCOMPONENT_GROUP_NAME);
 
             task.setInputFiles(pkg.getSources());
-            task.provideReleaseDirName(pkg.getReleaseDirNameProvider());
+            task.provideReleaseDirName(pkg.getReleaseDirPathProvider());
             task.provideArtifactBaseName(pkg.getBaseNameProvider());
             task.provideArtifactAppendix(pkg.getNameExtensionProvider());
             task.provideArtifactClassifier(pkg.getOsExtensionPProvider());

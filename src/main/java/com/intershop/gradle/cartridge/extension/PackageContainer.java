@@ -264,7 +264,7 @@ public class PackageContainer {
         if(! GUtil.isTrue(pkg)) {
             pkg = packageContainer.create(pkgName, local -> {
                 local.sources(getLocalFiles());
-                local.setReleaseDirName("");
+                local.setReleaseDirPath("");
                 local.setNameExtension(LOCAL_NAME);
             });
         }
@@ -285,7 +285,7 @@ public class PackageContainer {
         if(! GUtil.isTrue(pkg)) {
             pkg = packageContainer.create(pkgName, share -> {
                 share.sources(getShareFiles());
-                share.setReleaseDirName("");
+                share.setReleaseDirPath("");
                 share.setNameExtension(SHARE_NAME);
             });
         }
@@ -308,7 +308,7 @@ public class PackageContainer {
             pkg = packageContainer.create(pkgName, cartridge -> {
                 cartridge.sources(getCartridgeFiles());
 
-                cartridge.setReleaseDirName(project.getName().concat("/").concat("release"));
+                cartridge.setReleaseDirPath(project.getName().concat("/").concat("release"));
                 cartridge.setNameExtension(CARTRIDGE_NAME);
             });
         }
