@@ -857,6 +857,121 @@ class ICMComponentPluginIntSpec extends AbstractIntegrationSpec {
         gradleVersion << supportedGradleVersions
     }
 
+    @Unroll
+    def 'Test validate component build - wrong local, missing cartridge - #gradleVersion'(gradleVersion) {
+        given:
+        String projectName = "testproject"
+
+        ComponentUtility.prepareStaticCartridgFolder(testProjectDir, projectName)
+        createSettingsGradle(projectName)
+
+        buildFile  << """
+        plugins {
+            id 'com.intershop.gradle.cartridge'
+        }
+        
+        intershop {
+            packages {
+               local()
+            }
+        }
+        
+        """.stripIndent()
+
+        when:
+        List<String> args = ['validateCartridge', '-s']
+        def result1 = getPreparedGradleRunner()
+                .withArguments(args)
+                .withGradleVersion(gradleVersion)
+                .buildAndFail()
+
+        then:
+        result1.task(":validateCartridge").outcome == TaskOutcome.FAILED
+        result1.output.contains("There are 1 cartridge file(s) and no cartridge package.")
+        result1.output.contains("-> Add configuration 'cartridge' to Intershop extension.")
+        result1.output.contains("Local package is empty!")
+        result1.output.contains("-> Remove configuration 'local' from Intershop extension.")
+
+        where:
+        gradleVersion << supportedGradleVersions
+    }
+
+    @Unroll
+    def 'Test validate component build - wrong share, missing cartridge - #gradleVersion'(gradleVersion) {
+        given:
+        String projectName = "testproject"
+
+        ComponentUtility.prepareStaticCartridgFolder(testProjectDir, projectName)
+        createSettingsGradle(projectName)
+
+        buildFile  << """
+        plugins {
+            id 'com.intershop.gradle.cartridge'
+        }
+        
+        intershop {
+            packages {
+               share()
+            }
+        }
+        
+        """.stripIndent()
+
+        when:
+        List<String> args = ['validateCartridge', '-s']
+        def result1 = getPreparedGradleRunner()
+                .withArguments(args)
+                .withGradleVersion(gradleVersion)
+                .buildAndFail()
+
+        then:
+        result1.task(":validateCartridge").outcome == TaskOutcome.FAILED
+        result1.output.contains("There are 1 cartridge file(s) and no cartridge package.")
+        result1.output.contains("-> Add configuration 'cartridge' to Intershop extension.")
+        result1.output.contains("Share package is empty!")
+        result1.output.contains("-> Remove configuration 'share' from Intershop extension.")
+
+        where:
+        gradleVersion << supportedGradleVersions
+    }
+
+    @Unroll
+    def 'Test validate component build - wrong cartridge - #gradleVersion'(gradleVersion) {
+        given:
+        String projectName = "testproject"
+
+        ComponentUtility.prepareStaticCartridgeSimpleLibFolder(testProjectDir, projectName)
+        createSettingsGradle(projectName)
+
+        buildFile  << """
+        plugins {
+            id 'com.intershop.gradle.cartridge'
+        }
+        
+        intershop {
+            packages {
+               cartridge()
+            }
+        }
+        
+        """.stripIndent()
+
+        when:
+        List<String> args = ['validateCartridge', '-s']
+        def result1 = getPreparedGradleRunner()
+                .withArguments(args)
+                .withGradleVersion(gradleVersion)
+                .buildAndFail()
+
+        then:
+        result1.task(":validateCartridge").outcome == TaskOutcome.FAILED
+        result1.output.contains("Cartridge package is empty!")
+        result1.output.contains("-> Remove configuration 'cartridge' from Intershop extension.")
+
+        where:
+        gradleVersion << supportedGradleVersions
+    }
+
     File createSettingsGradle(String projectName) {
         File settingsFile = new File(testProjectDir, 'settings.gradle')
         settingsFile << """

@@ -18,7 +18,10 @@ package com.intershop.gradle.cartridge.extension;
 import groovy.lang.Closure;
 import org.gradle.api.Action;
 import org.gradle.api.NamedDomainObjectContainer;
+import org.gradle.api.NamedDomainObjectSet;
 import org.gradle.api.Project;
+import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.FileCollection;
 import org.gradle.util.GUtil;
 
 import javax.inject.Inject;
@@ -38,9 +41,9 @@ public class PackageContainer {
     private final static String SHARE       = "share";
     private final static String CARTRIDGE   = "cartridge";
 
-    private final static String LOCAL_NAME = "local";
-    private final static String SHARE_NAME = "share";
-    private final static String CARTRIDGE_NAME = "cartridge";
+    public final static String LOCAL_NAME = "local";
+    public final static String SHARE_NAME = "share";
+    public final static String CARTRIDGE_NAME = "cartridge";
 
     private final Project project;
     private final NamedDomainObjectContainer<ComponentPackage> packageContainer;
@@ -204,8 +207,45 @@ public class PackageContainer {
         return pkg;
     }
 
-    // direct access to container
-    public NamedDomainObjectContainer<ComponentPackage> getPackageContainer() {
+    /**
+     * This is a collection of all files in the local folder of a cartridge.
+     * The collection is also used for the creation of the local package.
+     *
+     * @return all cartridge files for shared filesystem
+     */
+    public FileCollection getLocalFiles() {
+        return project.files(project.getLayout().getProjectDirectory().dir(STATICFILES.concat("/").concat(LOCAL).concat("/").concat("root")));
+    }
+
+    /**
+     * This is a collection of all shared file of a cartridge.
+     * The collection is also used for the creation of the cartridge package.
+     *
+     * @return all cartridge files for shared filesystem
+     */
+    public FileCollection getShareFiles() {
+        return project.files(project.getLayout().getProjectDirectory().dir(STATICFILES.concat("/").concat(SHARE)));
+    }
+
+    /**
+     * This is a collection of all cartridge specific files.
+     * It is also used for the creation of the cartridge package.
+     *
+     * @return all cartridge files for cartridge folder
+     */
+    public FileCollection getCartridgeFiles() {
+        ConfigurableFileCollection cartridgeFiles = project.files();
+        cartridgeFiles.from(project.fileTree(project.getLayout().getProjectDirectory().dir(STATICFILES.concat("/").concat(CARTRIDGE))));
+        cartridgeFiles.from(project.fileTree(project.getLayout().getProjectDirectory(), files -> files.include("edl/**")));
+        return cartridgeFiles;
+    }
+
+    /**
+     * This is the container instance of this special container.
+     *
+     * @return all available component packages of this container.
+     */
+    public NamedDomainObjectSet<ComponentPackage> getPackageContainer() {
         return packageContainer;
     }
 
@@ -223,7 +263,7 @@ public class PackageContainer {
         ComponentPackage pkg = packageContainer.findByName(pkgName);
         if(! GUtil.isTrue(pkg)) {
             pkg = packageContainer.create(pkgName, local -> {
-                local.sources(project.files(project.getLayout().getProjectDirectory().dir(STATICFILES.concat("/").concat(LOCAL).concat("/").concat("root"))));
+                local.sources(getLocalFiles());
                 local.setReleaseDirName("");
                 local.setNameExtension(LOCAL_NAME);
             });
@@ -244,7 +284,7 @@ public class PackageContainer {
         ComponentPackage pkg = packageContainer.findByName(pkgName);
         if(! GUtil.isTrue(pkg)) {
             pkg = packageContainer.create(pkgName, share -> {
-                share.sources(project.files(project.getLayout().getProjectDirectory().dir(STATICFILES.concat("/").concat(SHARE))));
+                share.sources(getShareFiles());
                 share.setReleaseDirName("");
                 share.setNameExtension(SHARE_NAME);
             });
@@ -266,8 +306,7 @@ public class PackageContainer {
         ComponentPackage pkg = packageContainer.findByName(pkgName);
         if(! GUtil.isTrue(pkg)) {
             pkg = packageContainer.create(pkgName, cartridge -> {
-                cartridge.sources(project.fileTree(project.getLayout().getProjectDirectory().dir(STATICFILES.concat("/").concat(CARTRIDGE))));
-                cartridge.sources(project.fileTree(project.getLayout().getProjectDirectory(), files -> files.include("edl/**")));
+                cartridge.sources(getCartridgeFiles());
 
                 cartridge.setReleaseDirName(project.getName().concat("/").concat("release"));
                 cartridge.setNameExtension(CARTRIDGE_NAME);

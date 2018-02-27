@@ -16,6 +16,7 @@
 package com.intershop.gradle.cartridge;
 
 import com.intershop.gradle.cartridge.extension.IntershopExtension;
+import com.intershop.gradle.cartridge.task.ValidateCartridge;
 import com.intershop.gradle.cartridge.task.ZipComponent;
 import com.intershop.gradle.cartridge.util.CartridgePluginModelData;
 import org.apache.log4j.Logger;
@@ -50,6 +51,7 @@ import java.io.File;
 
 public class CartridgePlugin implements Plugin<Project> {
 
+    private final static String VALIDATETASK_NAME = "validateCartridge";
     private final ModelRegistry modelRegistry;
 
     @Inject
@@ -85,6 +87,9 @@ public class CartridgePlugin implements Plugin<Project> {
             task.setStaticLibs(extension.getStaticLibs());
         });
 
+        ValidateCartridge validateTask = project.getTasks().maybeCreate(VALIDATETASK_NAME, ValidateCartridge.class);
+        validateTask.setGroup(IntershopExtension.ICMCOMPONENT_GROUP_NAME);
+
         if(modelRegistry!= null && modelRegistry.state(new ModelPath("staticLibs")) == null) {
             modelRegistry.register(
                     ModelRegistrations.bridgedInstance(
@@ -97,7 +102,7 @@ public class CartridgePlugin implements Plugin<Project> {
                                         extension.getDeploymentFileProvider(),
                                         extension.getStaticLibs(),
                                         project.getComponents()))
-                            .descriptor("Model of Externale Cartridge Data.")
+                            .descriptor("Model of External Cartridge Data.")
                             .build());
         }
     }
