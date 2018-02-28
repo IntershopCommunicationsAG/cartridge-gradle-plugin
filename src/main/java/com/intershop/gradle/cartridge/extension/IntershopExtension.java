@@ -117,6 +117,8 @@ public class IntershopExtension {
 
     /**
      * This attribute defines a cartridge's display name.
+     *
+     * @return provides the display name
      */
     public Provider<String> getDisplayNameProvider() {
         return displayNameProperty;
@@ -132,6 +134,8 @@ public class IntershopExtension {
 
     /**
      * This attribute defines the description for a cartridge.
+     *
+     * @return provides the description
      */
     public Provider<String> getDescriptionProvider() {
         return descriptionProperty;
@@ -147,6 +151,8 @@ public class IntershopExtension {
 
     /**
      * Deployment file of a cartridge
+     *
+     * @return provides the deployment file
      */
     public Provider<RegularFile> getDeploymentFileProvider() {
         return deploymentFileProperty;
@@ -154,6 +160,8 @@ public class IntershopExtension {
 
     /**
      * Diretory with static libraries of a component
+     *
+     * @return provides file collection with static libraries
      */
     public FileCollection getStaticLibs() {
         return staticLibsProperty;

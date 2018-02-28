@@ -32,6 +32,7 @@ scm {
 }
 
 group 'com.intershop.gradle.icmcomponent'
+description 'Intershop Commerce Management Cartridge Gradle Plugin'
 version = scm.version.version
 
 gradlePlugin {
